@@ -78,7 +78,26 @@ namespace CUCoreLib.Registries
             var customInfo = ToCustomItemInfo(info);
             customInfo.Icon = icon;
             customInfo.SpawnFrequency = spawnFrequency;
+            customInfo.FractionalSpawnFrequency = null;
 
+            Register(id, customInfo);
+        }
+
+        /// <summary>
+        /// Registers fractional pool entries, independently rounded once per pool each world generation.
+        /// </summary>
+        public static void Register(string id, ItemInfo info, Sprite icon, float spawnFrequency)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                CUCoreLibPlugin.Log?.LogWarning("Ignored custom item registration with no ID.");
+                return;
+            }
+
+            var customInfo = ToCustomItemInfo(info);
+            customInfo.Icon = icon;
+            customInfo.FractionalSpawnFrequency = DropPoolRegistry.ValidateSpawnFrequency(id, spawnFrequency);
+            customInfo.SpawnFrequency = (int)Math.Floor(customInfo.FractionalSpawnFrequency.Value);
             Register(id, customInfo);
         }
 
@@ -147,6 +166,8 @@ namespace CUCoreLib.Registries
 
             id = id.Trim();
             info.ID = id;
+            if (info.FractionalSpawnFrequency.HasValue)
+                info.FractionalSpawnFrequency = DropPoolRegistry.ValidateSpawnFrequency(id, info.FractionalSpawnFrequency.Value);
             info.tags = info.tags ?? string.Empty;
             NormalizeIcon(info);
             var normalizedId = SpawnIdHelpers.NormalizeSpawnId(id);
@@ -246,7 +267,10 @@ namespace CUCoreLib.Registries
             }
 
             if (ids.Length > 0)
+            {
+                MultiplayerSyncRegistry.QueueHostSnapshotBroadcast();
                 result?.AddInfo("Cleared " + ids.Length + " item registrations owned by '" + normalizedOwnerId + "'.");
+            }
         }
 
         // Serialize customitemfields for mp sync
@@ -292,6 +316,9 @@ namespace CUCoreLib.Registries
                         ["decayInfo"] = info.decayInfo,
                         ["decayMinutes"] = info.decayMinutes,
                         ["spawnFrequency"] = info.SpawnFrequency,
+                        ["fractionalSpawnFrequency"] = info.FractionalSpawnFrequency.HasValue
+                            ? new JValue(info.FractionalSpawnFrequency.Value)
+                            : JValue.CreateNull(),
                         ["dropPool"] = info.DropPool.HasValue
                             ? new JValue((ushort)info.DropPool.Value)
                             : JValue.CreateNull(),
@@ -443,6 +470,7 @@ namespace CUCoreLib.Registries
                     decayInfo = obj.Value<byte?>("decayInfo") ?? 0,
                     decayMinutes = obj.Value<float?>("decayMinutes") ?? 0f,
                     SpawnFrequency = obj.Value<int?>("spawnFrequency") ?? 1,
+                    FractionalSpawnFrequency = obj.Value<float?>("fractionalSpawnFrequency"),
                     DropPool = obj["dropPool"]?.Type == JTokenType.Null
                         ? (DropPool?)null
                         : (DropPool?)obj.Value<ushort?>("dropPool"),

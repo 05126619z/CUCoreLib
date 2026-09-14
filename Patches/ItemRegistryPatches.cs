@@ -408,7 +408,7 @@ namespace CUCoreLib.Patches
                 var createdBattery = bat == null;
                 if (bat == null) bat = item.gameObject.AddComponent<BatteryItem>();
 
-                var initializeBatteryState = createdBattery || ConsumePendingBatteryInitialization(item.gameObject);
+                var initializeBatteryState = ConsumePendingBatteryInitialization(item.gameObject) || createdBattery;
                 ApplyBatteryProperties(item, bat, def, initializeBatteryState);
 
                 def.decayInfo |= (byte)ItemInfo.DecayType.BatteryDecay;
@@ -716,8 +716,10 @@ namespace CUCoreLib.Patches
             if (obj == null) return false;
 
             var marker = obj.GetComponent<PendingBatteryInitializationMarker>();
-            if (marker == null) return false;
+            if (marker == null || !marker.enabled) return false;
 
+            // Pickup/wear hooks can apply runtime properties again this frame. (one last time!)
+            marker.enabled = false;
             Object.Destroy(marker);
             return true;
         }

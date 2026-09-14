@@ -4,7 +4,6 @@ using System.Linq;
 using CUCoreLib.Data;
 using CUCoreLib.Registries;
 using HarmonyLib;
-using UnityEngine;
 
 namespace CUCoreLib.Patches
 {
@@ -31,7 +30,7 @@ namespace CUCoreLib.Patches
             }
 
             var injectedCount = 0;
-            foreach (var item in ItemRegistry.RegisteredItems.ToArray())
+            foreach (var item in ItemRegistry.RegisteredItems.OrderBy(item => item.Key, StringComparer.Ordinal).ToArray())
                 try
                 {
                     injectedCount += EnsureItemInLootPool(item.Key, item.Value);
@@ -61,7 +60,8 @@ namespace CUCoreLib.Patches
             if (!ItemLootPool.pool.ContainsKey(category)) ItemLootPool.pool.Add(category, new List<string>());
 
             var frequency = 1;
-            if (def is CustomItemInfo customInfo) frequency = Mathf.Max(0, customInfo.SpawnFrequency);
+            if (def is CustomItemInfo customInfo)
+                frequency = DropPoolRegistry.GetEntryCount(id, customInfo, "category:" + category);
 
             for (var i = 0; i < frequency; i++) ItemLootPool.pool[category].Add(id);
 

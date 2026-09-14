@@ -100,9 +100,11 @@ namespace CUCoreLib.Data
         public List<string> SpawnComponents = new List<string>();
 
         /// <summary>
-        /// Spawn weighting for traders and lootpools. 2 = double chance of seeing it.
+        /// Integer pool-entry weight. Use ItemRegistry.Register's float overload for fractional entries per generation.
         /// </summary>
         public int SpawnFrequency = 1;
+
+        internal float? FractionalSpawnFrequency;
 
         /// <summary>
         /// Legacy sprite scale multiplier applied to the held/inventory visuals. Don't use this, use <see cref="SpriteScaleDimensions"/> instead.

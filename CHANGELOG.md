@@ -7,25 +7,27 @@ I figured that this would be nice to have, as to easily take a look at everythin
 
 **Fixes** refers to bugfixes that will not or are very unlikely to break your mod
 
-## v1.0.6
+## v1.0.6 (Nightly)
 
 ### New Stuff!
 - Added `CUCoreUtils.GetLastDialogue(...)` for checking the last dialogue ID or selected text.
 - Added `DamagePlayerOnImpact` for `AddRigidbody2D` buildingEntites
 - `setbodyfield` and `setlimbfield` can now change fields on attached CUCoreLib statuses with `StatusType.Field`. (I.e. ToxicStatuses.Toxicity)
 - Added `CUCoreUtils.CheckModVersion("com.example.mymod");` for automated-ish version checking, see [https://cucorelib.web.app/docs/utils/](https://cucorelib.web.app/docs/utils/) for more info
+- `SpawnFrequency` now has a float overload! Pass fractions such as `1.5f`, `0.01f`, or `12.42f` through the new overload for a chance to spawn more (or less) entires of your item into the lootpool (Thanks, @Jetfire).
 
 ### Changes
 - Moodle queues now default to .5s refresh (this matches vanilla, so it should fix mismatched animations)
 - Explicit MP support for buildingEntites, tiles. Note this might break for people using v1.0.4/1.0.5 <-> v1.0.6 in terms of crossplay
 
 ### Fixes
-- Fixed `spawncategory` command registration throwing a duplicate-key error; position autofill now survives refreshes.
+- Fixed mod keybind descriptions missing, I'm honestly not sure why it took this long to fix >.>
+- Fixed custom battery charge resetting (Thanks, MCPO-Spartan-117!)
 - ""Fixed"" large amounts of data being truncated when sending over multiplayer requests
 - Fixed `AddRigidbody2D` (t'was a layer issue)
 
 
-## v1.0.5
+## v1.0.5 (Stable)
 
 ### New Stuff!
 - Added `CustomItemInfo.scaleConditionToward` to choose the weight to scale to. E.g. you can now have something that goes up in weight when lower condition

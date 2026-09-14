@@ -1647,14 +1647,14 @@ function itemPage(): string {
 
     <section class="lesson-card">
       <h2>ItemRegistry.Register</h2>
-      <p>Use the read-only <span class="inline-code">TryGetOwnerModGuid</span> queries on <span class="inline-code">ItemRegistry</span>, <span class="inline-code">LiquidRegistry</span>, <span class="inline-code">BuildingEntityRegistry</span>, <span class="inline-code">TileRegistry</span>, and <span class="inline-code">RecipeRegistry</span> when a tool or UI needs to identify the CUCoreLib-owning plugin. Resolve the returned GUID through BepInEx metadata for the mod's full display name; the query returns false for vanilla or otherwise unowned content.</p>
-      <p>CUCoreLib's item API wraps the game's normal <span class="inline-code">ItemInfo</span>. Give the item a stable lowercase ID, fill the vanilla stat block, then pass a sprite loaded through <span class="inline-code">AssetLoader</span>.</p>
-      <p>The item ID is the value that recipes, console spawning, save/load fallback, and locale lookup will use. Changing it later is a breaking change for saves and dependent recipes.</p>
+      <p>This is the main function for registering new items with the game, using <span class="inline-code">ItemRegistry.Register</span>.</p>
+      <p>Note the item ID is the value that recipes, console spawning, save/load fallback, and locale lookup will use, and one of the few required values.</p>
+      <p>Let's show a example:</p>
       <pre><code>Sprite sunpearSprite = AssetLoader.LoadEmbeddedSprite("Images.sunpear.png");
 
 ItemRegistry.Register(
     "sunpear",
-    new ItemInfo
+    new CustomItemInfo
     {
         fullName = "Sunpear",
         description = "A pale yellow fruit. Probably edible.",
@@ -1669,11 +1669,13 @@ ItemRegistry.Register(
     sunpearSprite
 );</code></pre>
     <img src="images/sunpear-ingame.png" alt="In-game screenshot of the sunpear item" class="screenshot">
+    <p>ItemRegistry.Register() has three components: string id, CustomItemInfo info, and Sprite icon.</p>
     </section>
     <section class="lesson-card">
       <h2>Arguments and overloads</h2>
       <p>The short function is the one most mods should start with:</p>
-      <pre><code>ItemRegistry.Register(string id, ItemInfo info, Sprite icon, int spawnFrequency = 1);</code></pre>
+      <pre><code>ItemRegistry.Register(string id, CustomItemInfo info, Sprite icon, int spawnFrequency = 1);
+ItemRegistry.Register(string id, CustomItemInfo info, Sprite icon, float spawnFrequency);</code></pre>
       <div class="table-wrap">
         <table class="field-table">
           <thead>
@@ -1685,13 +1687,12 @@ ItemRegistry.Register(
           </thead>
           <tbody>
             <tr><td><span class="inline-code">id</span></td><td><span class="inline-code">string</span></td><td>Stable item ID, usually lowercase with no spaces. Recipes, console spawn, save/load fallback, locale keys, and sprite cache lookup use this value.</td></tr>
-            <tr><td><span class="inline-code">info</span></td><td><span class="inline-code">ItemInfo</span> OR <span class="inline-code">CustomItemInfo</span></td><td>The stat block. Fill fields like <span class="inline-code">fullName</span>, <span class="inline-code">description</span>, <span class="inline-code">category</span>, <span class="inline-code">weight</span>, <span class="inline-code">value</span>, <span class="inline-code">tags</span>, and use actions here.</td></tr>
+            <tr><td><span class="inline-code">info</span></td><td><span class="inline-code">CustomItemInfo</span></td><td>The stat block. Fill fields like <span class="inline-code">fullName</span>, <span class="inline-code">description</span>, <span class="inline-code">category</span>, <span class="inline-code">weight</span>, <span class="inline-code">value</span>, <span class="inline-code">tags</span>, and use actions here.</td></tr>
             <tr><td><span class="inline-code">icon</span></td><td><span class="inline-code">Sprite</span></td><td>Inventory/item icon. Load it with <span class="inline-code">AssetLoader.LoadEmbeddedSprite</span> or <span class="inline-code">LoadSpriteFromPluginFolder</span>.</td></tr>
-            <tr><td><span class="inline-code">spawnFrequency</span></td><td><span class="inline-code">int</span></td><td>Optional pooled spawn weight for this item. CUCoreLib uses it for vanilla <span class="inline-code">category</span> fallback and for fixed <span class="inline-code">DropPool</span> sources. <span class="inline-code">0</span> means no pooled injection. Direct world-spawn counts use <span class="inline-code">WorldSpawnPerChunk</span>.</td></tr>
+            <tr><td><span class="inline-code">spawnFrequency</span></td><td><span class="inline-code">int</span> or <span class="inline-code">float</span></td><td>Pool-entry weight for category fallback or explicit <span class="inline-code">DropPool</span> sources. Defaults to <span class="inline-code">1</span>. Zero and negatives disable pooled injection. The float overload rounds the fractional remainder independently for each pool on every world generation; it is not a percentage chance per drop. Direct world-spawn counts use <span class="inline-code">WorldSpawnPerChunk</span>.</td></tr>
           </tbody>
         </table>
       </div>
-      <p>When you need CUCoreLib-only fields, keep the same register call and swap <span class="inline-code">ItemInfo</span> for <span class="inline-code">CustomItemInfo</span>. This avoids a second "definition" object while still giving you extras like worn sprites, custom data, containers, batteries, sprite sizing controls, spawn weight, and explicit loot-source overrides.</p>
       <pre><code>ItemRegistry.Register(
     "sunpear",
     new CustomItemInfo
@@ -1846,7 +1847,7 @@ if (item != null)
       <div class="details-body form-grid">
         ${rangeInput("item-weight", "Weight", "0", "20", "0.1", itemState.weight)}
         ${rangeInput("item-value", "Value", "0", "200", "1", itemState.value)}
-        ${rangeInput("item-spawn", "Spawn Frequency", "0", "5", "1", itemState.spawnFrequency, "0 means craft-only.")}
+        <label>Spawn Frequency<input id="item-spawn" type="number" min="0" step="any" value="${escapeHtml(itemState.spawnFrequency)}"><span class="hint">0 disables pooled drops. Fractions reroll per pool each world generation.</span></label>
         ${rangeInput("item-decay", "Decay Minutes", "0", "1440", "10", itemState.decayMinutes)}
         ${rangeInput("item-recognition", "Recognition", "0", "15", "1", itemState.recognition, "Vanilla items usually set this explicitly.")}
         ${textInput("item-tags", "Tags", itemState.tags, "Comma-separated vanilla tags.", true)}
@@ -2814,7 +2815,7 @@ function advancedItemPage(): string {
             <tr><td><span class="inline-code">SpriteScaleDimensions</span></td><td><span class="inline-code">SpriteScaleDimensions</span></td><td>Scales the sprite toward a target pixel size like <span class="inline-code">(14f, 14f)</span>. Add <span class="inline-code">true</span> as the third tuple value to stop once either axis reaches the requested size instead of forcing both axes to meet it.</td></tr>
             <tr><td><span class="inline-code">scaleConditionToward</span></td><td><span class="inline-code">float</span></td><td>Weight at zero condition when <span class="inline-code">scaleWeightWithCondition</span> is enabled. Defaults to <span class="inline-code">0f</span>; for example, set <span class="inline-code">0.1f</span> to scale from 0.1 to the normal <span class="inline-code">weight</span>.</td></tr>
             <tr><td><span class="inline-code">DropPool</span></td><td><span class="inline-code">DropPool?</span></td><td>Optional fixed loot-source flags such as <span class="inline-code">DropPool.Corpse</span>, <span class="inline-code">DropPool.MedicalCrate</span>, <span class="inline-code">DropPool.AllTraders</span>, <span class="inline-code">DropPool.DropCapsule</span>, or <span class="inline-code">DropPool.CapsuleContainer</span>. Leave it null to use category fallback.</td></tr>
-            <tr><td><span class="inline-code">SpawnFrequency</span></td><td><span class="inline-code">int</span></td><td>Pooled spawn weight. <span class="inline-code">0</span> means no pooled injection, <span class="inline-code">1</span> is the normal default, higher values make the item more common in category fallback or fixed <span class="inline-code">DropPool</span> sources.</td></tr>
+            <tr><td><span class="inline-code">SpawnFrequency</span></td><td><span class="inline-code">int</span></td><td>Whole pool entries; retained as an integer for existing mod DLLs. Zero and negatives disable pooled injection. For fractions, pass <span class="inline-code">spawnFrequency: 0.2f</span> to <span class="inline-code">ItemRegistry.Register(id, info, icon, ...)</span> instead of setting this field.</td></tr>
             <tr><td><span class="inline-code">WorldSpawnPerChunk</span></td><td><span class="inline-code">float?</span></td><td>Optional loose worldgen spawn density per chunk. Set it when the item should appear directly in the world after vanilla loot generation. This direct world-spawn count does not use <span class="inline-code">SpawnFrequency</span>.</td></tr>
             <tr><td><span class="inline-code">Container</span></td><td><span class="inline-code">ContainerProperties</span></td><td>Adds/configures a vanilla <span class="inline-code">Container</span> component on spawned items.</td></tr>
             <tr><td><span class="inline-code">Battery</span></td><td><span class="inline-code">BatteryProperties</span></td><td>Adds/configures a vanilla <span class="inline-code">BatteryItem</span> component on spawned items.</td></tr>
@@ -3193,6 +3194,16 @@ function advancedItemPage(): string {
     <section class="lesson-card">
       <h2>Targeting specific loot sources</h2>
       <p>Leave <span class="inline-code">DropPool</span> unset when the item should follow its broad <span class="inline-code">category</span> like vanilla. Set <span class="inline-code">DropPool</span> when the item should target explicit sources instead, such as corpses, one crate type, trader species, or capsules.</p>
+      <p>One entry has the same relative weight as one ordinary vanilla entry in the selected pool. Two entries have twice that relative weight, not necessarily twice the final drop probability. E.g., with nine other entries, one entry gives 10%, while two give 2/11 (about 18.18%).</p>
+      <p>Use the float registration overload for fractional entries:</p>
+      <pre><code>ItemRegistry.Register("rare_supply", new CustomItemInfo
+{
+    fullName = "Rare Supply",
+    category = "tool",
+    value = 10,
+    DropPool = DropPool.ContainerCrate | DropPool.Corpse | DropPool.AllTraders
+}, icon, spawnFrequency: 0.2f);</code></pre>
+      <p><span class="inline-code">0.2f</span> gives each configured pool a 20% chance of one entry for that generation, otherwise zero. <span class="inline-code">1.2f</span> always gives one entry and has a 20% chance of a second.</p>
       <pre><code>ItemRegistry.Register(
     "fieldbandagekit",
     new CustomItemInfo

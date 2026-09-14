@@ -358,7 +358,9 @@ ${useLines.join("\n")}
 ${limbLines.join("\n")}
     }`
     : "";
-  const spawnFrequency = intLiteral(itemState.spawnFrequency);
+  const spawnNumber = Number(itemState.spawnFrequency);
+  const spawnFrequency = !Number.isFinite(spawnNumber) || spawnNumber < 0 ? "0"
+    : Number.isInteger(spawnNumber) ? String(spawnNumber) : `${spawnNumber}f`;
   const spawnFrequencyArgument = spawnFrequency === "1" ? "" : `, ${spawnFrequency}`;
   const recognition = intLiteral(itemState.recognition);
   const recognitionLine = `,

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using CUCoreLib.ContentReload;
 using CUCoreLib.Helpers;
 using CUCoreLib.Registries;
@@ -85,7 +86,8 @@ namespace CUCoreLib.Networking
 
             var modules = snapshot[SnapshotModuleKey] as JObject ?? snapshot;
 
-            foreach (var property in modules.Properties())
+            // Pool counts depend on item definitions, regardless of JSON property ordering.
+            foreach (var property in modules.Properties().OrderBy(property => property.Name == "lootpools" ? 1 : 0))
             {
                 if (!ApplyModules.TryGetValue(property.Name, out var apply)) continue;
 
@@ -144,6 +146,7 @@ namespace CUCoreLib.Networking
 
             RegisterModule("liquids", CaptureLiquidManifest, LiquidRegistry.ApplyNetworkSnapshot);
             RegisterModule("items", CaptureItemManifest, ItemRegistry.ApplyNetworkSnapshot);
+            RegisterModule("lootpools", DropPoolRegistry.CaptureNetworkSnapshot, DropPoolRegistry.ApplyNetworkSnapshot);
             RegisterModule("tiles", TileRegistry.CaptureNetworkSnapshot, TileRegistry.ApplyNetworkSnapshot);
             RegisterModule("buildings", CaptureBuildingManifest, BuildingEntityRegistry.ApplyNetworkSnapshot);
             RegisterModule("liquidtiles", LiquidTileRegistry.CaptureNetworkSnapshot,

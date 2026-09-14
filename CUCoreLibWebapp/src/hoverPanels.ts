@@ -587,11 +587,11 @@ export const hoverPanels: Record<string, HoverPanel> = {
   },
   SpawnFrequency: {
     title: "SpawnFrequency",
-    body: "CUCoreLib custom item setting. 0 means no pooled injection, higher values add more weight to either category fallback pools or fixed DropPool sources. Direct WorldSpawnPerChunk counts ignore this field."
+    body: "Integer pool-entry weight, retained for older mod DLLs. Zero and negatives disable pooled injection. For fractions, use Register(id, info, icon, spawnFrequency: 0.2f); the public field remains int. WorldSpawnPerChunk is independent."
   },
   spawnFrequency: {
     title: "spawnFrequency",
-    body: "CUCoreLib custom item setting. 0 means no pooled injection, higher values add more weight to either category fallback pools or fixed DropPool sources. Direct WorldSpawnPerChunk counts ignore this field."
+    body: "Register accepts int or float. 1.2f means one pool entry plus a 20% chance of a second, rolled independently per pool every world generation, including reloads. Existing pairs keep their roll through registration and multiplayer snapshots. Zero and negatives disable pooled injection."
   },
   DropPool: {
     title: "DropPool",

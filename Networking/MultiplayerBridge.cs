@@ -8,6 +8,7 @@ using System.Reflection.Emit;
 using System.Text;
 using BepInEx.Bootstrap;
 using CUCoreLib.Helpers;
+using CUCoreLib.Registries;
 using HarmonyLib;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -620,8 +621,11 @@ namespace CUCoreLib.Networking
             // guards in a previous session; re-arm them and pull a fresh snapshot
             // for the newly created transport after a short delay (the connection
             // handshake usually completes within that window).
-            if (IsClient)
+            if (IsClient && !IsServer)
+            {
+                DropPoolRegistry.ResetGeneration();
                 CUCoreUtils.DelayCall(3f, MultiplayerSyncRegistry.RequestInitialSnapshotForNewSession);
+            }
         }
 
         private static Delegate CreateReceiverDelegate(MethodInfo registerMethod, MethodInfo helperMethod)

@@ -49,7 +49,8 @@ namespace CUCoreLib.Patches
     internal static class SettingsMenuSelectTabPatch
     {
         [HarmonyPostfix]
-        private static void Postfix(SettingsMenu __instance, Setting.SettingCategory category)
+        private static void Postfix(SettingsMenu __instance, Setting.SettingCategory category,
+            List<GameObject> ___spawnedSettings)
         {
             SettingsMenuCategoryExtender.EnsureAttached(__instance);
             var helper = __instance.GetComponent<SettingsMenuCategoryExtender>();
@@ -58,18 +59,19 @@ namespace CUCoreLib.Patches
             if (__instance && __instance.content && helper)
                 helper.FixDropdownsInContent(__instance.content);
 
-            RestoreRegisteredKeybindTooltips(__instance, category);
+            RestoreRegisteredKeybindTooltips(___spawnedSettings, category);
         }
 
-        private static void RestoreRegisteredKeybindTooltips(SettingsMenu menu, Setting.SettingCategory category)
+        private static void RestoreRegisteredKeybindTooltips(List<GameObject> spawnedSettings, Setting.SettingCategory category)
         {
-            if (!menu || !menu.content) return;
+            if (spawnedSettings == null) return;
 
+            // Content still contains the previous tab's rows until Unity finishes deferred destruction.
             var displayedSettingIndex = 0;
             foreach (var setting in Settings.GetAllSettings())
             {
                 if (setting == null || setting.category != category) continue;
-                if (displayedSettingIndex >= menu.content.childCount) return;
+                if (displayedSettingIndex >= spawnedSettings.Count) return;
 
                 if (setting is SettingKeybind)
                 {
@@ -77,10 +79,16 @@ namespace CUCoreLib.Patches
                         candidate != null && candidate.Id == setting.name && candidate.Kind == ModOptionKind.Keybind);
                     if (option != null && !string.IsNullOrWhiteSpace(option.Description))
                     {
-                        var tooltipTarget = menu.content.GetChild(displayedSettingIndex).GetChild(0);
+                        var row = spawnedSettings[displayedSettingIndex];
+                        if (!row || row.transform.childCount == 0)
+                        {
+                            displayedSettingIndex++;
+                            continue;
+                        }
+                        var tooltipTarget = row.transform.GetChild(0);
                         var tooltip = tooltipTarget.GetComponent<UITooltip>();
                         if (tooltip != null)
-                            tooltip.tipDesc = option.Description;
+                            tooltip.tipDesc = Locale.GetOther("gameset" + setting.name + "dsc");
                     }
                 }
 

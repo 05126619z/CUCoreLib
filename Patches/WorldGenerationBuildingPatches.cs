@@ -1,9 +1,32 @@
+using System.Collections;
 using CUCoreLib.Data;
+using CUCoreLib.Networking;
 using CUCoreLib.Registries;
 using HarmonyLib;
 
 namespace CUCoreLib.Patches
 {
+    [HarmonyPatch]
+    internal static class WorldGenerationLootPoolPatches
+    {
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(WorldGeneration), "WorldPreprocess")]
+        private static IEnumerator RefreshLootPools(IEnumerator __result)
+        {
+            // Run when the coroutine starts, before structures, corpses and trader stock are created.
+            DropPoolRegistry.BeginGeneration();
+            while (__result.MoveNext()) yield return __result.Current;
+        }
+
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(WorldGeneration), "Awake")]
+        private static void ResetLootPools()
+        {
+            if (!MultiplayerBridge.IsRunning || MultiplayerBridge.IsServer)
+                DropPoolRegistry.ResetGeneration();
+        }
+    }
+
     [HarmonyPatch(typeof(WorldGeneration), "Clear")]
     internal static class WorldGenerationCleanupPatches
     {
