@@ -21,6 +21,7 @@ I figured that this would be nice to have, as to easily take a look at everythin
 - Explicit MP support for buildingEntites, tiles. Note this might break for people using v1.0.4/1.0.5 <-> v1.0.6 in terms of crossplay
 
 ### Fixes
+- Terrain tiles now use IDs 0-255 (Fixing multiplayer tiles breaking for people without ccl joining)
 - Fixed mod keybind descriptions missing, I'm honestly not sure why it took this long to fix >.>
 - Fixed custom battery charge resetting (Thanks, MCPO-Spartan-117!)
 - ""Fixed"" large amounts of data being truncated when sending over multiplayer requests

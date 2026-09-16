@@ -18,7 +18,7 @@ namespace CUCoreLib.Registries
     public static class TileRegistry
     {
         private const string HitSoundTokenPrefix = "CUCoreLib.TileHitSound.";
-        private const int CustomTileIndexCount = ushort.MaxValue - FirstCustomTileIndex + 1;
+        private const int CustomTileIndexCount = byte.MaxValue - FirstCustomTileIndex + 1;
 
         public const ushort FirstCustomTileIndex = 36;
 
@@ -96,7 +96,8 @@ namespace CUCoreLib.Registries
             var effectiveId = GetAvailableId(id);
             if (!TryAllocateIndex(effectiveId, out var tileIndex))
             {
-                CUCoreLibPlugin.Log?.LogWarning("Tile registration ignored because no custom tile indices remain.");
+                CUCoreLibPlugin.Log?.LogWarning($"Tile registration '{id}' ignored: all {CustomTileIndexCount} custom tile slots are occupied :(");
+                CUCoreLibPlugin.Log?.LogWarning($"If you get this warning, try to remove excess tiles or repurpose tile IDs");
                 return null;
             }
 
@@ -107,12 +108,7 @@ namespace CUCoreLib.Registries
             bool queueNetworkSnapshot)
         {
 
-            if (tileIndex < FirstCustomTileIndex)
-            {
-                CUCoreLibPlugin.Log?.LogWarning(
-                    $"Tile index {tileIndex} is reserved by the base game. Custom tile indices must be {FirstCustomTileIndex} or higher.");
-                return false;
-            }
+            if (!IsSupportedCustomIndex(tileIndex)) return false;
 
             if (definition == null)
             {
@@ -152,6 +148,13 @@ namespace CUCoreLib.Registries
             InjectRegisteredTiles(WorldGeneration.world);
             if (queueNetworkSnapshot) MultiplayerSyncRegistry.QueueHostSnapshotBroadcast();
             return true;
+        }
+
+        private static bool IsSupportedCustomIndex(ushort tileIndex)
+        {
+            if (tileIndex >= FirstCustomTileIndex && tileIndex <= byte.MaxValue) return true;
+            CUCoreLibPlugin.Log?.LogWarning($"Tile index {tileIndex} ignored, custom tile indices must be between {FirstCustomTileIndex}-255");
+            return false;
         }
 
         private static bool TryAllocateIndex(string id, out ushort tileIndex)
@@ -322,7 +325,7 @@ namespace CUCoreLib.Registries
                         Definition = property.Value as JObject
                     };
                 })
-                .Where(entry => entry.HasIndex && entry.Definition != null)
+                .Where(entry => entry.HasIndex && entry.Definition != null && IsSupportedCustomIndex(entry.TileIndex))
                 .OrderBy(entry => entry.TileIndex)
                 .ToArray();
 

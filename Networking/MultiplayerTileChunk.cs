@@ -8,12 +8,6 @@ namespace CUCoreLib.Networking
     {
         internal const int Size = 32;
 
-        internal static void WriteTileId(Stream stream, ushort tileId)
-        {
-            stream.WriteByte((byte)tileId);
-            stream.WriteByte((byte)(tileId >> 8));
-        }
-
         internal static void Apply(byte[] compressed, ushort[,] blocks, int x, int y)
         {
             if (blocks == null || x < 0 || y < 0 ||
